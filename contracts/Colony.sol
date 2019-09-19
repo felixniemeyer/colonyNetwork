@@ -20,6 +20,7 @@ pragma experimental ABIEncoderV2;
 
 import "./ColonyStorage.sol";
 import "./IEtherRouter.sol";
+import "./extensions/ExtensionManager.sol";
 
 
 contract Colony is ColonyStorage, PatriciaTreeProofs {
@@ -242,6 +243,12 @@ contract Colony is ColonyStorage, PatriciaTreeProofs {
     return colonyNetwork.addColonyVersion(_version, _resolver);
   }
 
+  function addExtension(address _manager, bytes32 _extensionId, uint256 _version, address _resolver, uint8[] memory _roles)
+  public stoppable auth
+  {
+    ExtensionManager(_manager).addExtension(_extensionId, _version, _resolver, _roles);
+  }
+
   function addDomain(uint256 _permissionDomainId, uint256 _childSkillIndex, uint256 _parentDomainId) public
   stoppable
   authDomain(_permissionDomainId, _childSkillIndex, _parentDomainId)
@@ -349,6 +356,9 @@ contract Colony is ColonyStorage, PatriciaTreeProofs {
   bytes4 constant SIG5 = bytes4(keccak256("setExpenditurePayoutModifier(uint256,uint256,uint256,uint256,int256)"));
   bytes4 constant SIG6 = bytes4(keccak256("setExpenditureClaimDelay(uint256,uint256,uint256,uint256,uint256)"));
 
+  // Introduce Extension Manager
+  bytes4 constant SIG7 = bytes4(keccak256("addExtension(address,bytes32,uint256,address,uint8[])"));
+
   // v3 to v4
   function finishUpgrade() public always {
     // Remove payment/task mutability from multisig
@@ -363,6 +373,8 @@ contract Colony is ColonyStorage, PatriciaTreeProofs {
     colonyAuthority.setRoleCapability(uint8(ColonyRole.Arbitration), address(this), SIG4, true);
     colonyAuthority.setRoleCapability(uint8(ColonyRole.Arbitration), address(this), SIG5, true);
     colonyAuthority.setRoleCapability(uint8(ColonyRole.Arbitration), address(this), SIG6, true);
+    // Extension manager
+    colonyAuthority.setRoleCapability(uint8(ColonyRole.Root), address(this), SIG7, true);
   }
 
   function checkNotAdditionalProtectedVariable(uint256 _slot) public view recovery {
